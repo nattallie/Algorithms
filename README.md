@@ -1,5 +1,5 @@
 # Algorithms
-Covered problems from Cracking The Interview problems. All of them are solved using Swift.
+"Cracking The Interview Problems" problems were covered. Swift is used to solve all of them.
 
 ## Chapters:
 * Chapter 1 - Arrays and Strings
