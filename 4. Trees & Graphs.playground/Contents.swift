@@ -8,12 +8,14 @@ class Node {
     var left: Node?
     var right: Node?
     var parent: Node?
+    var size: Int?
     
-    init(val: Int, left: Node? = nil, right: Node? = nil, parent: Node? = nil) {
+    init(val: Int, left: Node? = nil, right: Node? = nil, parent: Node? = nil, size: Int? = 0) {
         self.val = val
         self.left = left
         self.right = right
         self.parent = parent
+        self.size = size
     }
 }
 
@@ -32,6 +34,155 @@ private func treeDepth(root: Node?) -> Int {
     return max(treeDepth(root: root.left) + 1, treeDepth(root: root.right) + 1)
 }
 
+// MARK: 4.12 Paths with Sum
+func pathWithSums(root: Node?, target: Int) -> Int {
+    var numOfPaths: Int = 0
+    var runningSums: [Int: Int] = [:]
+    pathWithSumsRec(root: root, target: target, res: &numOfPaths, soFar: 0, runningSums: &runningSums)
+    return numOfPaths
+}
+
+private func pathWithSumsRec(root: Node?, target: Int, res: inout Int, soFar: Int, runningSums: inout [Int: Int]) {
+    guard let root = root else { return }
+    
+    let newSoFar = soFar + root.val
+    
+    if newSoFar == target {
+        res += 1
+    }
+    
+    if let numOfLeftover = runningSums[newSoFar-target] {
+        res += numOfLeftover
+    }
+    
+    runningSums[newSoFar] = runningSums[newSoFar, default: 0] + 1
+    pathWithSumsRec(root: root.left, target: target, res: &res, soFar: newSoFar, runningSums: &runningSums)
+    pathWithSumsRec(root: root.right, target: target, res: &res, soFar: newSoFar, runningSums: &runningSums)
+    runningSums[newSoFar] = runningSums[newSoFar, default: 1] - 1
+}
+
+//let node9 = Node(val: -2)
+//let node8 = Node(val: 3)
+//let node1 = Node(val: 3, left: node8, right: node9)
+//let node4 = Node(val: 2)
+//let node2 = Node(val: 1, right: node4)
+//let node3 = Node(val: 5, left: node1, right: node2)
+//let node5 = Node(val: 11)
+//let node7 = Node(val: -3, right: node5)
+//let root = Node(val: 10, left: node3, right: node7)
+//
+//print(pathWithSums(root: root, target: 8))
+
+// MARK: 4.11 Binary Tree
+class BinaryTree {
+    private var root: Node? = nil
+    
+    init() {}
+    
+    func insert(val: Int) {
+        let (parent, node) = findWithParent(parent: nil, curNode: root, val: val, shouldIncreaseSize: true)
+        // this insertion wouldn't work for duplicates
+        guard node == nil else { return }
+        
+        if parent == nil {
+            root = .init(val: val)
+        } else if parent!.val < val {
+            parent!.right = .init(val: val)
+        } else {
+            parent!.left = .init(val: val)
+        }
+    }
+    
+    func find(val: Int) -> Node? {
+        let (_, node) = findWithParent(parent: nil, curNode: root, val: val, shouldIncreaseSize: false)
+        return node
+    }
+    
+    private func findWithParent(parent: Node?, curNode: Node?, val: Int, shouldIncreaseSize: Bool) -> (Node?, Node?) {
+        if curNode == nil || curNode?.val == val { return (parent, curNode) }
+        
+        if shouldIncreaseSize {
+            curNode!.size = (curNode?.size ?? 0) + 1
+        }
+
+        if val > curNode!.val {
+            return findWithParent(parent: curNode, curNode: curNode?.right, val: val, shouldIncreaseSize: shouldIncreaseSize)
+        } else {
+            return findWithParent(parent: curNode, curNode: curNode?.left, val: val, shouldIncreaseSize: shouldIncreaseSize)
+        }
+    }
+    
+    func getRandomNode() -> Node? {
+        guard let root = root, let size = root.size, size > 0 else { return root }
+        
+        let randomIndex = Int.random(in: 0...size)
+        print("random index was: \(randomIndex)")
+        return getRandomNodeRec(curNode: root, index: randomIndex)
+    }
+    
+    private func getRandomNodeRec(curNode: Node?, index: Int) -> Node? {
+        guard let curNode = curNode, let size = curNode.size, size > 0 else { return curNode }
+        
+        let leftSize = curNode.left == nil ? -1 : (curNode.left?.size ?? 0)
+        
+        if index <= leftSize {
+            return getRandomNodeRec(curNode: curNode.left, index: index)
+        } else if index == leftSize + 1 {
+            return curNode
+        } else {
+            return getRandomNodeRec(curNode: curNode.right, index: size - index)
+        }
+    }
+    
+    func logTree() -> [(Int, Int)] {
+        var result: [(Int, Int)] = []
+        treeTraversal(root: root, &result)
+        return result
+    }
+    
+    private func treeTraversal(root: Node?, _ numbers: inout [(Int, Int)]) {
+        guard let root = root else { return }
+        
+        treeTraversal(root: root.left, &numbers)
+        numbers.append((root.val, root.size ?? 0))
+        treeTraversal(root: root.right, &numbers)
+    }
+}
+
+//let binaryTree: BinaryTree = .init()
+//binaryTree.insert(val: 20)
+//binaryTree.insert(val: 13)
+//binaryTree.insert(val: 6)
+//binaryTree.insert(val: 10)
+//binaryTree.insert(val: 15)
+//binaryTree.insert(val: 14)
+//binaryTree.insert(val: 18)
+//binaryTree.insert(val: 30)
+//binaryTree.insert(val: 25)
+//binaryTree.insert(val: 38)
+//binaryTree.insert(val: 36)
+//print(binaryTree.logTree())
+//print(binaryTree.getRandomNode()?.val)
+
+// MARK: 4.10 Subtree
+private func checkSubtree(_ root1: Node?, _ root2: Node?) -> Bool {
+    checkSubtreeRec(root1, curRoot1: root1, root2, curRoot2: root2)
+}
+
+private func checkSubtreeRec(_ root1: Node?, curRoot1: Node?, _ root2: Node?, curRoot2: Node?) -> Bool {
+    if curRoot2 == nil { return true }
+    if curRoot1 == nil { return false }
+    
+    if curRoot1?.val == curRoot2?.val {
+        let newRoot1 = curRoot2 === root2 ? curRoot1 : root1
+        return checkSubtreeRec(newRoot1, curRoot1: curRoot1?.left, root2, curRoot2: curRoot2?.left) &&
+            checkSubtreeRec(newRoot1, curRoot1: curRoot1?.right, root2, curRoot2: curRoot2?.right)
+    } else {
+        return checkSubtreeRec(root1, curRoot1: root1?.left, root2, curRoot2: curRoot2) ||
+            checkSubtreeRec(root1, curRoot1: root1?.right, root2, curRoot2: curRoot2)
+    }
+}
+
 // MARK: 4.9 BST Sequences
 private func sequences(root: Node?) -> [[Int]] {
     guard root != nil else { return [] }
@@ -39,7 +190,6 @@ private func sequences(root: Node?) -> [[Int]] {
     let left = sequences(root: root?.left)
     
     let right = sequences(root: root?.right)
-    print("root \(root?.val), l \(left), r \(right)")
     
     var result: [[Int]] = []
     
@@ -104,12 +254,12 @@ private func weaveSequences(l1: [Int], l2: [Int], l1Ind: Int, l2Ind: Int, soFar:
 }
 
 
-let node3 = Node(val: 25)
-let node6 = Node(val: 67)
-let node7 = Node(val: 77, left: node6)
-let root = Node(val: 50, left: node3, right: node7)
-
-print(sequences(root: root))
+//let node3 = Node(val: 25)
+//let node6 = Node(val: 67)
+//let node7 = Node(val: 77, left: node6)
+//let root = Node(val: 50, left: node3, right: node7)
+//
+//print(sequences(root: root))
 
 
 // MARK: 4.8 First Common Ancestor
